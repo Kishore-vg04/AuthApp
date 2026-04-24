@@ -48,17 +48,18 @@ export function AuthProvider({ children }) {
     loadUser();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+
   const login = async (email, password) => {
-    const { data } = await api.post('/auth/login', { email, password });
+    const { data } = await api.post('/users/login', { email, password });
     dispatch({ type: 'LOGIN_SUCCESS', payload: data });
     return data;
-  };
+  } 
 
   const signup = async (name, email, password) => {
-    const { data } = await api.post('/auth/signup', { name, email, password });
+    const { data } = await api.post('/users/register', { name, email, password });
     dispatch({ type: 'LOGIN_SUCCESS', payload: data });
     return data;
-  };
+  } 
 
   const logout = () => dispatch({ type: 'LOGOUT' });
 
