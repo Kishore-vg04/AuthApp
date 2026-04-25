@@ -29,7 +29,7 @@ export default function ProfilePage() {
 
     setProfileLoading(true);
     try {
-      const { data } = await api.put('/user/profile', profileForm);
+      const { data } = await api.put('/users/profile', profileForm);
       updateUser(data.user);
       toast.success('Profile updated!');
     } catch (err) {
@@ -46,7 +46,7 @@ export default function ProfilePage() {
 
     setPwLoading(true);
     try {
-      await api.put('/user/change-password', {
+      await api.put('/users/change-password', {
         currentPassword: pwForm.currentPassword,
         newPassword: pwForm.newPassword,
       });

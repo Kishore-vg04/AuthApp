@@ -39,31 +39,47 @@ export function AuthProvider({ children }) {
         return;
       }
       try {
-        const { data } = await api.get('/auth/me');
+        const { data } = await api.get('/users/me');
         dispatch({ type: 'LOGIN_SUCCESS', payload: { user: data.user, token: state.token } });
-      } catch {
+      } catch (error) {
+        console.error('Failed to load user:', error.message);
         dispatch({ type: 'LOGOUT' });
       }
     };
     loadUser();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-
   const login = async (email, password) => {
-    const { data } = await api.post('/users/login', { email, password });
-    dispatch({ type: 'LOGIN_SUCCESS', payload: data });
-    return data;
-  } 
+    try {
+      const { data } = await api.post('/users/login', { email, password });
+      dispatch({ type: 'LOGIN_SUCCESS', payload: data });
+      return data;
+    } catch (error) {
+      const message = error.response?.data?.message || 'Login failed';
+      dispatch({ type: 'SET_ERROR', payload: message });
+      throw error;
+    }
+  };
 
   const signup = async (name, email, password) => {
-    const { data } = await api.post('/users/register', { name, email, password });
-    dispatch({ type: 'LOGIN_SUCCESS', payload: data });
-    return data;
-  } 
+    try {
+      const { data } = await api.post('/users/register', { name, email, password });
+      dispatch({ type: 'LOGIN_SUCCESS', payload: data });
+      return data;
+    } catch (error) {
+      const message = error.response?.data?.message || 'Signup failed';
+      dispatch({ type: 'SET_ERROR', payload: message });
+      throw error;
+    }
+  };
 
-  const logout = () => dispatch({ type: 'LOGOUT' });
+  const logout = () => {
+    dispatch({ type: 'LOGOUT' });
+  };
 
-  const updateUser = (user) => dispatch({ type: 'UPDATE_USER', payload: user });
+  const updateUser = (user) => {
+    dispatch({ type: 'UPDATE_USER', payload: user });
+  };
 
   return (
     <AuthContext.Provider value={{ ...state, login, signup, logout, updateUser }}>

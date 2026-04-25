@@ -30,9 +30,11 @@ app.get('/', (req, res) => {
   res.send('API Running');
 });
 
-// User routes
+// Routes
 const userRouter = require('./routes/user');
+const authRouter = require('./routes/auth');
 app.use('/api/users', userRouter);
+app.use('/api/auth', authRouter);
 
 // Error handling middleware (simple example)
 app.use((err, req, res, next) => {

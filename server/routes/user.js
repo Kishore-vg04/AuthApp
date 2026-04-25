@@ -1,17 +1,10 @@
 const express = require('express');
-
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const generateToken = require('../utils/generateToken');
 const { updateProfile, changePassword } = require('../controllers/userController');
 const { protect } = require('../middleware/auth');
 
 const router = express.Router();
-
-// Test GET route
-router.get('/', (req, res) => {
-  res.send('API Running');
-});
 
 // POST /api/users/register
 router.post('/register', async (req, res, next) => {
@@ -20,11 +13,27 @@ router.post('/register', async (req, res, next) => {
     if (!name || !email || !password) {
       return res.status(400).json({ message: 'Name, email, and password are required' });
     }
+    if (password.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters' });
+    }
     const userExists = await User.findOne({ email });
-    if (userExists) return res.status(400).json({ message: 'User already exists' });
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await User.create({ name, email, password: hashedPassword });
-    res.status(201).json({ message: 'User registered', userId: user._id });
+    if (userExists) return res.status(400).json({ message: 'Email already registered' });
+
+    // User model pre-save hook handles password hashing
+    const user = await User.create({ name, email, password });
+    const token = generateToken(user._id);
+
+    res.status(201).json({
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        avatar: user.avatar,
+        bio: user.bio,
+        isEmailVerified: user.isEmailVerified,
+      },
+    });
   } catch (err) {
     next(err);
   }
@@ -38,23 +47,46 @@ router.post('/login', async (req, res, next) => {
       return res.status(400).json({ message: 'Email and password are required' });
     }
     const user = await User.findOne({ email }).select('+password');
-    if (!user) return res.status(400).json({ message: 'User not found' });
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ message: 'Invalid password' });
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-    res.json({ token });
+    if (!user || !(await user.matchPassword(password))) {
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+    const token = generateToken(user._id);
+
+    res.json({
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        avatar: user.avatar,
+        bio: user.bio,
+        isEmailVerified: user.isEmailVerified,
+      },
+    });
   } catch (err) {
     next(err);
   }
 });
 
-// Existing profile and password routes
-router.put(
-  '/profile',
-  protect,
-  updateProfile
-);
+// GET /api/users/me
+router.get('/me', protect, (req, res) => {
+  res.json({
+    user: {
+      id: req.user._id,
+      name: req.user.name,
+      email: req.user.email,
+      avatar: req.user.avatar,
+      bio: req.user.bio,
+      isEmailVerified: req.user.isEmailVerified,
+      createdAt: req.user.createdAt,
+    },
+  });
+});
 
+// PUT /api/users/profile
+router.put('/profile', protect, updateProfile);
+
+// PUT /api/users/change-password
 router.put('/change-password', protect, changePassword);
 
 module.exports = router;
