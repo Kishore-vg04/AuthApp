@@ -8,9 +8,9 @@ const app = express();
 // Middleware
 app.use(express.json());
 
-// CORS setup for your frontend
+// CORS — reads CLIENT_URL from environment so no code change needed if frontend URL changes
 app.use(cors({
-  origin: 'https://authapp-2-k96u.onrender.com',
+  origin: process.env.CLIENT_URL,
   credentials: true,
 }));
 
